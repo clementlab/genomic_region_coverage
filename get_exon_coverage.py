@@ -51,7 +51,7 @@ def get_exons_from_refgene(gene_list, ref_gene_file, chr_index, strand_index, tx
                 for i in range(line_exon_count-1, -1, -1):
                     this_gene_exons.append((line_chr,line_exons[i],line_introns[i]))
 
-            gene_id_key = (line_gene_id, line_chr + "_" + str(line_start) + "_" + str(line_end))
+            gene_id_key = (line_gene_id, line_chr + ":" + str(line_start) + "-" + str(line_end))
             gene_exons[gene_id_key] = this_gene_exons
 
     print('Finished reading refGene.txt. Got exon information for ' + str(len(gene_exons)) + ' genes.')
@@ -408,7 +408,7 @@ def plot_gene_exon_coverage_info(genes_with_exons, gene_info, output_root):
                 big_df_arr.append(gene_val_arr)
 
             big_df = pd.DataFrame(big_df_arr, columns=['Exon' + str(x) for x in range(1,max_gene_exon+1)])
-            big_df.index = [x[0] + x[1] for x in genes_with_exons]
+            big_df.index = [x[0] + ' ' x[1] for x in genes_with_exons]
 
             plt.figure(figsize=(8, 6))
             ax = sns.heatmap(big_df, cmap='coolwarm', mask=big_df.isnull())
@@ -447,6 +447,7 @@ if __name__ == "__main__":
         print("Error details: ", e.output)
 
     gene_list = get_genes_from_file(args.gene_exon_list_file)
+    gene_list = gene_list[0:5]
 
     genes_with_exons = get_exons_from_refgene(gene_list, args.ref_gene_file, args.chr_index, args.strand_index, args.tx_start_index, args.tx_end_index, args.cds_start_index, args.cds_end_index, args.exon_index, args.intron_index, args.gene_id_index, args.exon_status_index)
 
