@@ -447,7 +447,6 @@ if __name__ == "__main__":
         print("Error details: ", e.output)
 
     gene_list = get_genes_from_file(args.gene_exon_list_file)
-    gene_list = gene_list[0:5]
 
     genes_with_exons = get_exons_from_refgene(gene_list, args.ref_gene_file, args.chr_index, args.strand_index, args.tx_start_index, args.tx_end_index, args.cds_start_index, args.cds_end_index, args.exon_index, args.intron_index, args.gene_id_index, args.exon_status_index)
 
