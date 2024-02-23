@@ -14,8 +14,18 @@ def get_genes_from_file(gene_exon_list_file):
     print('Read ' + str(len(gene_list)) + ' genes from the gene list file.')
     return gene_list
 
-def get_exons_from_refgene(gene_list, ref_gene_file, chr_index, strand_index, tx_start_index, tx_end_index, cds_start_index, cds_end_index, exon_index, intron_index, gene_id_index, exon_status_index):
+def get_chr_names_from_bam(bam_input):
+    chr_names = []
+    for line in read_command_output(f'samtools view -H {bam_input}'):
+        if line.strip() == "": break
+        if line[0:3] == "@SQ":
+            chr_names.append(line.split("\t")[1].split(":")[1])
+    return chr_names
+
+def get_exons_from_refgene(gene_list, ref_gene_file, chr_index, strand_index, tx_start_index, tx_end_index, cds_start_index, cds_end_index, exon_index, intron_index, gene_id_index, exon_status_index, chr_names=None):
     gene_exons = defaultdict(list) # gene_id > list(exons) where exons is [starts: dict of starts, ends: dict of ends]
+    count_genes_discarded_no_chr_in_bam = 0
+    chr_names_not_in_bam = set()
     with open(ref_gene_file, 'r') as fh_refGene:
         for line in fh_refGene:
             line_arr = line.strip().split("\t")
@@ -37,6 +47,11 @@ def get_exons_from_refgene(gene_list, ref_gene_file, chr_index, strand_index, tx
             if line_gene_id not in gene_list:
                 continue
 
+            if chr_names is not None and line_chr not in chr_names:
+                count_genes_discarded_no_chr_in_bam += 1
+                chr_names_not_in_bam.add(line_chr)
+                continue
+
             this_gene_exons = []
 
             # if on the watson strand
@@ -55,6 +70,7 @@ def get_exons_from_refgene(gene_list, ref_gene_file, chr_index, strand_index, tx
             gene_exons[gene_id_key] = this_gene_exons
 
     print('Finished reading refGene.txt. Got exon information for ' + str(len(gene_exons)) + ' genes.')
+    print('Skipped ' + str(count_genes_discarded_no_chr_in_bam) + ' genes due to no chr name in BAM file. (chr names: ' + ", ".join(chr_names_not_in_bam) + ')')
     
     return gene_exons
 
@@ -447,8 +463,10 @@ if __name__ == "__main__":
         print("Error details: ", e.output)
 
     gene_list = get_genes_from_file(args.gene_exon_list_file)
+    chr_name_list = get_chr_names_from_bam(args.bam_input)
 
-    genes_with_exons = get_exons_from_refgene(gene_list, args.ref_gene_file, args.chr_index, args.strand_index, args.tx_start_index, args.tx_end_index, args.cds_start_index, args.cds_end_index, args.exon_index, args.intron_index, args.gene_id_index, args.exon_status_index)
+    genes_with_exons = get_exons_from_refgene(gene_list, args.ref_gene_file, args.chr_index, args.strand_index, args.tx_start_index, args.tx_end_index, args.cds_start_index, args.cds_end_index, 
+                                              args.exon_index, args.intron_index, args.gene_id_index, args.exon_status_index, chr_name_list)
 
     gene_info = {}
     for gene_idx,gene in enumerate(genes_with_exons):
@@ -456,7 +474,8 @@ if __name__ == "__main__":
         gene_exon_coverage_info = []
         for exon in genes_with_exons[gene]:
             exon_coverage = get_exon_coverage(args.bam_input, exon)
-            gene_exon_coverage_info.append(exon_coverage)
+            if exon_coverage is not None:
+                gene_exon_coverage_info.append(exon_coverage)
         gene_info[gene] = gene_exon_coverage_info
 
 
