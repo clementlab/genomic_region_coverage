@@ -408,7 +408,7 @@ def plot_gene_exon_coverage_info(genes_with_exons, gene_info, output_root):
                 big_df_arr.append(gene_val_arr)
 
             big_df = pd.DataFrame(big_df_arr, columns=['Exon' + str(x) for x in range(1,max_gene_exon+1)])
-            big_df.index = [x[0] + ' ' x[1] for x in genes_with_exons]
+            big_df.index = [x[0] + ' ' + x[1] for x in genes_with_exons]
 
             plt.figure(figsize=(8, 6))
             ax = sns.heatmap(big_df, cmap='coolwarm', mask=big_df.isnull())
